@@ -46,10 +46,10 @@ class Cell():
     def erase_wall(self, direction):
         if direction == "up":
             self.up = False
-            self.win.draw_line( Line( Point(self._x1, self._y2), Point(self._x2, self._y2) ), Window.BACKGROUND_COLOR )
+            self.win.draw_line( Line( Point(self._x1, self._y1), Point(self._x2, self._y1) ), Window.BACKGROUND_COLOR )
         elif direction == "down":
             self.down = False
-            self.win.draw_line( Line( Point(self._x1, self._y1), Point(self._x2, self._y1) ), Window.BACKGROUND_COLOR )
+            self.win.draw_line( Line( Point(self._x1, self._y2), Point(self._x2, self._y2) ), Window.BACKGROUND_COLOR )
         elif direction == "left":
             self.left = False
             self.win.draw_line( Line( Point(self._x1, self._y1), Point(self._x1, self._y2) ), Window.BACKGROUND_COLOR )
@@ -63,6 +63,8 @@ class Maze():
         self.row_count = map_height // cell_size
         self.collumn_count = map_width // cell_size
         self.win = win
+        self.entrance = (0, 0)
+        self.exit = (self.collumn_count - 1, self.row_count - 1)
         if seed != None:
             random.seed(seed)
 
@@ -87,9 +89,66 @@ class Maze():
         self.win.redraw()
         time.sleep(ANIMATION_DELAY)
     
+    def generate_exits(self):
+        directions = ["up", "down", "left", "right"]
+        
+        # choose random direction for entrance
+        rand_dir = random.choice(directions)
+        
+        # carve entrance
+        if rand_dir == "up":
+            directions.remove("up")
+            y = 0
+            x = random.randrange(0, self.row_count)
+            self.entrance = (x, y)
+            self.maze_map[y][x].erase_wall("up")
+        elif rand_dir == "down":
+            directions.remove("down")
+            y = self.collumn_count - 1
+            x = random.randrange(0, self.row_count)
+            self.entrance = (x, y)
+            self.maze_map[y][x].erase_wall("down")
+        elif rand_dir == "left":
+            directions.remove("left")
+            x = 0
+            y = random.randrange(0, self.collumn_count)
+            self.entrance = (x, y)
+            self.maze_map[y][x].erase_wall("left")
+        elif rand_dir == "right":
+            directions.remove("right")
+            x = self.row_count - 1
+            y = random.randrange(0, self.collumn_count)
+            self.entrance = (x, y)
+            self.maze_map[y][x].erase_wall("right")
+
+        # choose random direction for exit
+        rand_dir = random.choice(directions)
+
+        # carve exit
+        if rand_dir == "up":
+            y = 0
+            x = random.randrange(0, self.row_count)
+            self.exit = (x, y)
+            self.maze_map[y][x].erase_wall("up")
+        elif rand_dir == "down":
+            y = self.collumn_count - 1
+            x = random.randrange(0, self.row_count)
+            self.exit = (x, y)
+            self.maze_map[y][x].erase_wall("down")
+        elif rand_dir == "left":
+            x = 0
+            y = random.randrange(0, self.collumn_count)
+            self.exit = (x, y)
+            self.maze_map[y][x].erase_wall("left")
+        elif rand_dir == "right":
+            x = self.row_count - 1
+            y = random.randrange(0, self.collumn_count)
+            self.exit = (x, y)
+            self.maze_map[y][x].erase_wall("right")
+    
     def break_walls(self):
-        self.maze_map[self.collumn_count - 1][self.row_count - 1].erase_wall("up") # entrance
-        self.maze_map[0][0].erase_wall("down") # exit
+        # generate random exits
+        self.generate_exits()
 
         # start recursive function with start block
         self.break_walk(0, 0)
@@ -98,66 +157,6 @@ class Maze():
         for i in range(self.collumn_count):
             for j in range(self.row_count):
                 self.maze_map[i][j].visited = False
-    
-    def solve(self, i=0, j=0):
-        # visit current cell
-        self.maze_map[i][j].visited = True
-
-        # check for solution
-        if i == self.collumn_count - 1 and j == self.row_count - 1:
-            return True
-        
-        directions = [ "up", "down", "left", "right" ]
-        # check each direction
-        for k in range(len(directions)):
-            new_i = i
-            new_j = j
-            # check direction can be walked
-            if directions[k] == "up":
-                if self.maze_map[i][j].up == True:
-                    continue
-                if i == self.collumn_count - 1:
-                    continue
-                if self.maze_map[i + 1][j].visited == True:
-                    continue
-                new_i += 1
-            elif directions[k] == "down":
-                if self.maze_map[i][j].down == True:
-                    continue
-                if i == 0:
-                    continue
-                if self.maze_map[i - 1][j].visited == True:
-                    continue
-                new_i -= 1
-            elif directions[k] == "left":
-                if self.maze_map[i][j].left == True:
-                    continue
-                if j == self.row_count - 1:
-                    continue
-                if self.maze_map[i][j + 1].visited == True:
-                    continue
-                new_j -= 1
-            elif directions[k] == "right":
-                if self.maze_map[i][j].right == True:
-                    continue
-                if j == 0:
-                    continue
-                if self.maze_map[i - 1][j].visited == True:
-                    continue
-                new_j -= 1
-
-            # move to new direction
-            self.maze_map[i][j].draw_move(self.maze_map[new_i][new_j])
-            self.animate()
-            solution_found = self.solve(new_i, new_j)
-            if solution_found == True:
-                return True
-            else:
-                self.maze_map[i][j].draw_move(self.maze_map[new_i][new_j], True)
-                self.animate()
-        
-        # no direction worked out
-        return False
     
     def break_walk(self, i, j):
         # visit current cell
@@ -190,12 +189,12 @@ class Maze():
             for k in range(len(possible_directions)):
                 if k == random_direction:
                     if possible_directions[k] == "up":
-                        self.maze_map[i][j].erase_wall("up")
-                        self.maze_map[i + 1][j].erase_wall("down")
+                        self.maze_map[i][j].erase_wall("down")
+                        self.maze_map[i + 1][j].erase_wall("up")
                         self.break_walk(i + 1, j)
                     elif possible_directions[k] == "down":
-                        self.maze_map[i][j].erase_wall("down")
-                        self.maze_map[i - 1][j].erase_wall("up")
+                        self.maze_map[i][j].erase_wall("up")
+                        self.maze_map[i - 1][j].erase_wall("down")
                         self.break_walk(i - 1, j)
                     elif possible_directions[k] == "right":
                         self.maze_map[i][j].erase_wall("right")
@@ -205,4 +204,67 @@ class Maze():
                         self.maze_map[i][j].erase_wall("left")
                         self.maze_map[i][j - 1].erase_wall("right")
                         self.break_walk(i, j - 1)
+    
+    def solve(self, i=None, j=None):
+        if i == None and j == None:
+            j, i = self.entrance
+        
+        # visit current cell
+        self.maze_map[i][j].visited = True
+
+        # check for solution
+        if i == self.exit[1] and j == self.exit[0]:
+            return True
+        
+        directions = [ "up", "down", "left", "right" ]
+        # check each direction
+        for k in range(len(directions)):
+            new_i = i
+            new_j = j
+            # check direction can be walked
+            if directions[k] == "up":
+                if self.maze_map[i][j].down == True:
+                    continue
+                if i == self.collumn_count - 1:
+                    continue
+                if self.maze_map[i + 1][j].visited == True:
+                    continue
+                new_i += 1
+            elif directions[k] == "down":
+                if self.maze_map[i][j].up == True:
+                    continue
+                if i == 0:
+                    continue
+                if self.maze_map[i - 1][j].visited == True:
+                    continue
+                new_i -= 1
+            elif directions[k] == "left":
+                if self.maze_map[i][j].left == True:
+                    continue
+                if j == 0:
+                    continue
+                if self.maze_map[i][j - 1].visited == True:
+                    continue
+                new_j -= 1
+            elif directions[k] == "right":
+                if self.maze_map[i][j].right == True:
+                    continue
+                if j == self.row_count - 1:
+                    continue
+                if self.maze_map[i][j + 1].visited == True:
+                    continue
+                new_j += 1
+
+            # move to new direction
+            self.maze_map[i][j].draw_move(self.maze_map[new_i][new_j])
+            self.animate()
+            solution_found = self.solve(new_i, new_j)
+            if solution_found == True:
+                return True
+            else:
+                self.maze_map[i][j].draw_move(self.maze_map[new_i][new_j], True)
+                self.animate()
+        
+        # no direction worked out
+        return False
 
