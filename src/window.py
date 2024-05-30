@@ -30,11 +30,16 @@ class Line():
 # Window
 # Encapsulates graphical display for the program
 class Window():
+    BACKGROUND_COLOR = "#d9d9d9"
+    DRAW_COLOR = "black"
+    SOLUTION_COLOR = "red"
+    UNDO_COLOR = "grey"
+
     def __init__(self, width, height):
         self.__root = Tk()
         self.__root.title("Maze Solver")
         self.__root.geometry(f"{width}x{height}")
-        self.__canvas = Canvas(self.__root)
+        self.__canvas = Canvas(self.__root, width=width, height=height, bg=self.BACKGROUND_COLOR)
         self.__canvas.pack()
         self.__is_running = False
         self.__root.protocol("WM_DELETE_WINDOW", self.close)
