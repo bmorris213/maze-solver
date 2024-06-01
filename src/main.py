@@ -1,5 +1,5 @@
 # Maze Solver
-# 05-29-24
+# 06-01-24
 # Brian Morris
 
 from window import Window, Point, Line
@@ -29,7 +29,7 @@ def main():
         maze.draw()
 
         if max_loop_counter >= max_loop:
-            print("Holy shit we broke it")
+            print("MAX LOOPS REACHED")
             break
 
         maze.break_walls()
